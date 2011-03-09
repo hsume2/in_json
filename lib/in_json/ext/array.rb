@@ -6,7 +6,7 @@ module InJson
 
     module InstanceMethods
       def in_json(name = :default, overrule_definition = nil)
-        map { |entry| entry.in_json(name, overrule_definition) }
+        map { |entry| entry.respond_to?(:in_json) ? entry.in_json(name, overrule_definition) : entry }
       end
     end
   end

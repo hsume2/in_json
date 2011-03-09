@@ -3,12 +3,15 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 class User < ActiveRecord::Base
   has_many :posts
   has_many :blog_posts
-  has_many :check_ins
-  has_many :reviews, :as => :reviewable
 
   in_json do
     name
     email
+  end
+
+  in_json(:with_reserved) do
+    _id
+    _type
   end
 
   in_json(:with_post_count) do
@@ -48,6 +51,13 @@ class User < ActiveRecord::Base
       comments :only_approved
     end
   end
+  
+  in_json(:with_posts_and_comments_missing) do
+    posts do
+      title
+      comments :always_missing
+    end
+  end
 
   def post_count
     self.posts.count
@@ -57,7 +67,7 @@ end
 class Post < ActiveRecord::Base
   belongs_to :user
   has_many :comments
-  has_many :reviews, :as => :reviewable
+  has_many :reviews
 
   in_json do
     title
@@ -65,6 +75,16 @@ class Post < ActiveRecord::Base
 
   in_json(:only_content) do
     content
+  end
+
+  in_json(:with_user) do
+    user
+  end
+
+  in_json(:with_reviews) do
+    reviews do
+      score
+    end
   end
 end
 
@@ -74,9 +94,17 @@ end
 class Comment < ActiveRecord::Base
   belongs_to :post
 
+  in_json do
+    content
+  end
+
   in_json(:only_approved) do
     approved
   end
+end
+
+class Review < ActiveRecord::Base
+  belongs_to :post
 end
 
 describe InJson do
@@ -98,6 +126,13 @@ describe InJson do
     @user.in_json(:missing_def).should == {
       :name => 'John User',
       :email => 'john@example.com'
+    }
+  end
+
+  it "should return model in json with reserved methods" do
+    @user.in_json(:with_reserved).should == {
+      :id => @user.id,
+      :type => User
     }
   end
 
@@ -150,6 +185,15 @@ describe InJson do
     @user.in_json(:with_posts_and_comments_named).should == {
       :posts => [
         { :title => 'Hello World!', :comments=>[{:approved=>true}] },
+        { :title => 'Hello World!', :comments=>[] }
+      ]
+    }
+  end
+  
+  it "should return model in json with posts and comments missing" do
+    @user.in_json(:with_posts_and_comments_missing).should == {
+      :posts => [
+        { :title => 'Hello World!', :comments=>[{:content=>"Great blog!"}] },
         { :title => 'Hello World!', :comments=>[] }
       ]
     }
@@ -211,5 +255,53 @@ describe InJson do
         u['email'].should == 'example@john.com'
       end
     end
+  end
+
+  it "should return model in json when without definition and default" do
+    @review = @blog_post.reviews.create(:score => 5)
+    @review.in_json.should == {
+      :id => @review.id,
+      :post_id => @blog_post.id,
+      :score => 5
+    }
+  end
+
+  it "should return model in json when nested without default" do
+    @review = @blog_post.reviews.create(:score => 5)
+    @blog_post.in_json(:with_reviews).should == {
+      :reviews => [
+        { :score => 5 }
+      ]
+    }
+  end
+
+  it "should return model in json with post count via Thread" do
+    InJson.with(:with_post_count) do
+      @user.in_json.should == {
+        :name => 'John User',
+        :email => 'john@example.com',
+        :post_count => 2
+      }
+    end
+  end
+
+  it "should return model in json with posts and named definition via Thread" do
+    InJson.with(:with_posts_named) do
+      @user.in_json.should == {
+        :posts => [
+          { :content => 'Welcome to my blog.' },
+          { :content => 'Welcome to my blog post.' }
+        ]
+      }
+    end
+  end
+
+  it "should return model with user" do
+    @post.in_json(:with_user).should == {
+      :user => {
+        :name => 'John User',
+        :email => 'john@example.com'
+      }
+    }
   end
 end

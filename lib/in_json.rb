@@ -6,6 +6,15 @@ module InJson
     base.send :include, InstanceMethods
   end
 
+  def self.with(name = :default, &block)
+    begin
+      Thread.current[:in_json_definition] = name
+      yield
+    ensure
+      Thread.current[:in_json_definition] = nil
+    end
+  end
+
   # A {Definition} is a proxy class primarily for evaluating {InJson} blocks into a {Hash} definition.
   #
   #  class Post
@@ -29,6 +38,7 @@ module InJson
     # Stores any method calls as {Hash} keys
     # @return [Hash] the evaluated definition
     def method_missing(method, *args, &block)
+      method = method.to_s.sub(/^_/, '').to_sym if method.to_s =~ /^_.*/
       @hash[method] = block_given? ? Definition.new.instance_eval(&block) : args.first
       @hash
     end
@@ -50,15 +60,19 @@ module InJson
   module InstanceMethods
     # Returns a Hash that can be used as this object in JSON format
     # @param [Symbol] name the {InJson} definition to evaluate
-    # @param [Symbol, Hash, nil] overrule_definition a named {InJson} definition, a full Hash definition, or nil
+    # @param [Symbol, Hash, nil] injected_definition a named {InJson} definition, a full Hash definition, or nil
     # @return [Hash] the JSON-ready Hash
-    def in_json(name = :default, overrule_definition = nil)
-      definition = in_json_definition(name, overrule_definition)
+    def in_json(name = :default, injected_definition = nil)
+      definition = in_json_definition(name, injected_definition)
       attrs = attributes.freeze.symbolize_keys
-      definition.inject({}) do |result, at_dfn|
-        at, dfn = at_dfn
-        result_at = result[at] = attrs.has_key?(at) ? attrs[at] : send(at)
-        result[at] = result_at.map { |entry| entry.in_json(name, dfn) } if result_at && result_at.is_a?(Array)
+      return attrs unless definition
+      definition.inject({}) do |result, attr_dfn|
+        attr, definition = attr_dfn
+
+        result_at = attrs.has_key?(attr) ? attrs[attr] : send(attr)
+        result_at = result_at.in_json(name, definition) if result_at.respond_to?(:in_json) && !result_at.kind_of?(Class)
+
+        result[attr] = result_at
         result
       end
     end
@@ -66,13 +80,15 @@ module InJson
 
     protected
 
-    def in_json_definition(name, overrule_definition)
-      definitions = self.class.read_inheritable_attribute(:in_json_definitions)
-
-      ( overrule_definition.kind_of?(Symbol) ?
-          definitions[overrule_definition] :
-          (overrule_definition || definitions[name])
-      ) || definitions[:default]
+    def in_json_definition(name, injected_definition)
+      definitions = self.class.read_inheritable_attribute(:in_json_definitions)      
+      if Thread.current[:in_json_definition] || injected_definition.kind_of?(Symbol)
+        definitions && (definitions[Thread.current[:in_json_definition]] || definitions[injected_definition])
+      elsif injected_definition.kind_of?(Hash)
+        injected_definition
+      elsif definitions
+        definitions[name]        
+      end || (definitions && definitions[:default])
     end
   end
 end

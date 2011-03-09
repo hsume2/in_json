@@ -35,6 +35,11 @@ ActiveRecord::Base.connection.create_table :comments do |t|
   t.integer :post_id
 end
 
+ActiveRecord::Base.connection.create_table :reviews do |t|
+  t.integer :score
+  t.integer :post_id
+end
+
 ActiveRecord::Base.connection.class.class_eval do
   IGNORED_SQL = [/^PRAGMA/, /^SELECT currval/, /^SELECT CAST/, /^SELECT @@IDENTITY/, /^SELECT @@ROWCOUNT/, /^SAVEPOINT/, /^ROLLBACK TO SAVEPOINT/, /^RELEASE SAVEPOINT/, /SHOW FIELDS/]
 
