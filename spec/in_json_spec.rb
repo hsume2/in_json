@@ -4,6 +4,9 @@ class User < ActiveRecord::Base
   has_many :posts
   has_many :blog_posts
 
+  # =================================================================================================
+  # = All these examples need restructuring to be more direct in what functionality they're testing =
+  # =================================================================================================
   in_json do
     name
     email
@@ -291,6 +294,17 @@ describe InJson do
         :posts => [
           { :content => 'Welcome to my blog.' },
           { :content => 'Welcome to my blog post.' }
+        ]
+      }
+    end
+  end
+
+  it "should return model in json with posts and comments named via Thread" do
+    InJson.with(:with_posts_and_comments_named) do
+      @user.in_json.should == {
+        :posts => [
+          { :title => 'Hello World!', :comments=>[{:approved=>true}] },
+          { :title => 'Hello World!', :comments=>[] }
         ]
       }
     end

@@ -81,14 +81,16 @@ module InJson
     protected
 
     def in_json_definition(name, injected_definition)
-      definitions = self.class.read_inheritable_attribute(:in_json_definitions)      
-      if Thread.current[:in_json_definition] || injected_definition.kind_of?(Symbol)
-        definitions && (definitions[Thread.current[:in_json_definition]] || definitions[injected_definition])
-      elsif injected_definition.kind_of?(Hash)
-        injected_definition
-      elsif definitions
-        definitions[name]        
-      end || (definitions && definitions[:default])
+      definitions = self.class.read_inheritable_attribute(:in_json_definitions)
+      thread_definition = Thread.current[:in_json_definition]
+      thread_definition && definitions && result = definitions[thread_definition]
+      return result if result # *yuck*
+      injected_definition.kind_of?(Symbol) && definitions && result = definitions[injected_definition]
+      return result if result
+      return injected_definition if injected_definition.kind_of?(Hash)
+      definitions && result = definitions[name]
+      return result if result
+      return definitions && definitions[:default]
     end
   end
 end
