@@ -48,6 +48,15 @@ class User < ActiveRecord::Base
     end
   end
 
+  in_json(:with_posts_and_comments_nested) do
+    posts do
+      title
+      comments do
+        content
+      end
+    end
+  end
+
   in_json(:with_posts_and_comments_named) do
     posts do
       title
@@ -103,6 +112,14 @@ class Comment < ActiveRecord::Base
 
   in_json(:only_approved) do
     approved
+  end
+
+  in_json(:with_posts_and_comments_nested) do
+    approved
+  end
+
+  in_json(:with_posts_and_comments_named) do # Just to counter-act collission
+    content
   end
 end
 
@@ -182,6 +199,17 @@ describe InJson do
         { :title => 'Hello World!', :comments=>[] }
       ]
     }
+  end
+
+  it "should return model in json with posts and comments nested via Thread" do
+    InJson.with(:with_posts_and_comments_nested) do
+      @user.in_json.should == {
+        :posts => [
+          { :title => 'Hello World!', :comments=>[{:content=>"Great blog!"}] },
+          { :title => 'Hello World!', :comments=>[] }
+        ]
+      }
+    end
   end
 
   it "should return model in json with posts and comments named" do

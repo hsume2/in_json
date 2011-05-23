@@ -80,16 +80,27 @@ module InJson
 
     protected
 
+    # TODO move precedence to doc
     def in_json_definition(name, injected_definition)
       definitions = self.class.read_inheritable_attribute(:in_json_definitions)
+
+      # Try nested first (if I am nested)
+      return injected_definition if injected_definition.kind_of?(Hash)
+
+      # Try named second
+      injected_definition.kind_of?(Symbol) && definitions && result = definitions[injected_definition]
+      return result if result
+
+      # Try thread third
       thread_definition = Thread.current[:in_json_definition]
       thread_definition && definitions && result = definitions[thread_definition]
       return result if result # *yuck*
-      injected_definition.kind_of?(Symbol) && definitions && result = definitions[injected_definition]
-      return result if result
-      return injected_definition if injected_definition.kind_of?(Hash)
+
+      # Try given definitions fourth
       definitions && result = definitions[name]
       return result if result
+
+      # Try default last
       return definitions && definitions[:default]
     end
   end
