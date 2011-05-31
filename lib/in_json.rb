@@ -58,48 +58,9 @@ module InJson
       write_inheritable_attribute :in_json_definitions, definitions
     end
 
-    # Calculates associations to be load alongside based on an {InJson} definition
-    # @param [Symbol] name the definition to calculate from
-    # @return [Hash] the associations
-    def include_in_json(name = :default)
-      definitions = read_inheritable_attribute(:in_json_definitions) || {}
-      definition = definitions[name]
-      return unless definition
-
-      reflexions = reflections
-
-      definition.recursively_reject({}) { |key, value|
-        !(reflexions && reflexions.respond_to?(:has_key?) && reflexions.has_key?(key)) && value.nil?
-      }
-    end
-  end
-
-  module InstanceMethods
-    # Returns a Hash that can be used as this object in JSON format
-    # @param [Symbol] name the {InJson} definition to evaluate
-    # @param [Symbol, Hash, nil] injected_definition a named {InJson} definition, a full Hash definition, or nil
-    # @return [Hash] the JSON-ready Hash
-    def in_json(name = :default, injected_definition = nil)
-      definition = in_json_definition(name, injected_definition)
-      attrs = attributes.freeze.symbolize_keys
-      return attrs unless definition
-      definition.inject({}) do |result, attr_dfn|
-        attr, definition = attr_dfn
-
-        result_at = attrs.has_key?(attr) ? attrs[attr] : send(attr)
-        result_at = result_at.in_json(name, definition) if result_at.respond_to?(:in_json) && !result_at.kind_of?(Class)
-
-        result[attr] = result_at
-        result
-      end
-    end
-    alias_method :as_json, :in_json
-
-    protected
-
     # TODO move precedence to doc
     def in_json_definition(name, injected_definition)
-      definitions = self.class.read_inheritable_attribute(:in_json_definitions)
+      definitions = read_inheritable_attribute(:in_json_definitions)
 
       # Try nested first (if I am nested)
       return injected_definition if injected_definition.kind_of?(Hash)
@@ -120,6 +81,47 @@ module InJson
       # Try default last
       return definitions && definitions[:default]
     end
+
+    # Calculates associations to be load alongside based on an {InJson} definition
+    # @param [Symbol] name the definition to calculate from
+    # @return [Hash] the associations
+    def include_in_json(name = :default, injected_definition = nil)
+      definition = in_json_definition(name, injected_definition)
+      return unless definition
+      reflexions = reflections
+
+      definition.inject({}) do |result, attr_dfn|
+        attr, definition = attr_dfn
+
+        klass = reflexions[attr].klass if reflexions.has_key?(attr) && reflexions[attr]
+        def_at = (klass.include_in_json(name, definition) || {}) if klass
+
+        result[attr] = def_at if def_at
+        result
+      end
+    end
+  end
+
+  module InstanceMethods
+    # Returns a Hash that can be used as this object in JSON format
+    # @param [Symbol] name the {InJson} definition to evaluate
+    # @param [Symbol, Hash, nil] injected_definition a named {InJson} definition, a full Hash definition, or nil
+    # @return [Hash] the JSON-ready Hash
+    def in_json(name = :default, injected_definition = nil)
+      definition = self.class.in_json_definition(name, injected_definition)
+      attrs = attributes.freeze.symbolize_keys
+      return attrs unless definition
+      definition.inject({}) do |result, attr_dfn|
+        attr, definition = attr_dfn
+
+        result_at = attrs.has_key?(attr) ? attrs[attr] : send(attr)
+        result_at = result_at.in_json(name, definition) if result_at.respond_to?(:in_json) && !result_at.kind_of?(Class)
+
+        result[attr] = result_at
+        result
+      end
+    end
+    alias_method :as_json, :in_json
   end
 end
 

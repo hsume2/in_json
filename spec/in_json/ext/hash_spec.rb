@@ -19,7 +19,7 @@ describe Hash do
       5 => {3 => 'e'}
     }
   end
-
+  
   it "recursively rejects even keys" do
     @sample.recursively_reject { |key, value| key % 2 == 0 }.should == {
       1 => {1 => 'a'},

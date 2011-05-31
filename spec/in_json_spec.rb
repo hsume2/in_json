@@ -64,6 +64,11 @@ class User < ActiveRecord::Base
     end
   end
 
+  in_json(:with_posts_and_all_named) do
+    posts :with_all
+  end
+
+
   in_json(:with_posts_and_comments_missing) do
     posts do
       title
@@ -98,6 +103,11 @@ class Post < ActiveRecord::Base
       score
     end
   end
+
+  in_json(:with_all) do
+    reviews
+    comments :with_votes
+  end
 end
 
 class BlogPost < Post
@@ -105,6 +115,7 @@ end
 
 class Comment < ActiveRecord::Base
   belongs_to :post
+  has_many :votes
 
   in_json do
     content
@@ -120,6 +131,19 @@ class Comment < ActiveRecord::Base
 
   in_json(:with_posts_and_comments_named) do # Just to counter-act collission
     content
+  end
+
+  in_json (:with_votes) do
+    votes
+  end
+end
+
+class Comment::Vote < ActiveRecord::Base
+  belongs_to :comment
+  belongs_to :user
+
+  in_json do
+    rating
   end
 end
 
@@ -272,6 +296,15 @@ describe InJson do
 
     User.include_in_json(:with_posts).should == {
       :posts => {}
+    }
+
+    User.include_in_json(:with_posts_and_all_named).should == {
+      :posts => {
+        :reviews => {},
+        :comments => {
+          :votes => {}
+        }
+      }
     }
   end
 

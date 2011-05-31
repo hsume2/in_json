@@ -35,6 +35,12 @@ ActiveRecord::Base.connection.create_table :comments do |t|
   t.integer :post_id
 end
 
+ActiveRecord::Base.connection.create_table :comment_votes do |t|
+  t.integer :rating
+  t.integer :comment_id
+  t.integer :user_id
+end
+
 ActiveRecord::Base.connection.create_table :reviews do |t|
   t.integer :score
   t.integer :post_id
