@@ -1,4 +1,5 @@
 require 'in_json/ext/array'
+require 'in_json/ext/hash'
 
 module InJson
   def self.included(base)
@@ -38,7 +39,8 @@ module InJson
     # Stores any method calls as {Hash} keys
     # @return [Hash] the evaluated definition
     def method_missing(method, *args, &block)
-      method = method.to_s.sub(/^_/, '').to_sym if method.to_s =~ /^_.*/
+      method_s = method.to_s
+      method = method_s.sub(/^_/, '').to_sym if method_s =~ /^_.*/
       @hash[method] = block_given? ? Definition.new.instance_eval(&block) : args.first
       @hash
     end
@@ -54,6 +56,16 @@ module InJson
       definitions[name] = Definition.new.instance_eval(&block)
 
       write_inheritable_attribute :in_json_definitions, definitions
+    end
+
+    # Calculates associations to be load alongside based on an {InJson} definition
+    # @param [Symbol] name the definition to calculate from
+    # @return [Hash] the associations
+    def include_in_json(name = :default)
+      definitions = read_inheritable_attribute(:in_json_definitions) || {}
+      definition = definitions[name]
+      return unless definition
+      definition.recursively_reject { |key, value| value.nil? }
     end
   end
 

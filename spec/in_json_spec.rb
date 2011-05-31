@@ -1,4 +1,4 @@
-require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+require 'spec_helper'
 
 class User < ActiveRecord::Base
   has_many :posts
@@ -260,6 +260,21 @@ describe InJson do
           { :title => 'Hello World!', :comments=>[] }
         ]
       }]
+    }.should have_queries(0)
+  end
+
+  it "should intelligently calculate eager-loading includes" do
+    User.include_in_json(:with_posts_and_comments).should == {
+      :posts => {
+        :comments => {}
+      }
+    }
+  end
+
+  it "should use calculated eager-loading includes" do
+    lambda {  @users = User.find(:all, :include => User.include_in_json(:with_posts_and_comments))  }.should have_queries(3)
+    lambda {
+      @users.in_json(:with_posts_and_comments)
     }.should have_queries(0)
   end
 

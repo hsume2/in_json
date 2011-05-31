@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{in_json}
-  s.version = "0.0.3"
+  s.version = "0.0.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Henry Hsu"]
-  s.date = %q{2011-05-23}
+  s.date = %q{2011-05-31}
   s.description = %q{JSON serialization for Rails. Straight-forward attributes. Only serialize what you want. Optimally obeys eager-loaded associations}
   s.email = %q{henry.hsu@photomugs.com}
   s.extra_rdoc_files = [
@@ -37,6 +37,7 @@ Gem::Specification.new do |s|
   s.rubygems_version = %q{1.5.0}
   s.summary = %q{Optimally straight-forward JSON serialization for Rails}
   s.test_files = [
+    "spec/in_json/ext/hash_spec.rb",
     "spec/in_json_spec.rb",
     "spec/spec_helper.rb"
   ]
