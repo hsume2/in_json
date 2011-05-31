@@ -63,7 +63,7 @@ class User < ActiveRecord::Base
       comments :only_approved
     end
   end
-  
+
   in_json(:with_posts_and_comments_missing) do
     posts do
       title
@@ -220,7 +220,7 @@ describe InJson do
       ]
     }
   end
-  
+
   it "should return model in json with posts and comments missing" do
     @user.in_json(:with_posts_and_comments_missing).should == {
       :posts => [
@@ -268,6 +268,10 @@ describe InJson do
       :posts => {
         :comments => {}
       }
+    }
+
+    User.include_in_json(:with_posts).should == {
+      :posts => {}
     }
   end
 

@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{in_json}
-  s.version = "0.0.4"
+  s.version = "0.0.5"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Henry Hsu"]
@@ -28,6 +28,8 @@ Gem::Specification.new do |s|
     "in_json.gemspec",
     "lib/in_json.rb",
     "lib/in_json/ext/array.rb",
+    "lib/in_json/ext/hash.rb",
+    "spec/in_json/ext/hash_spec.rb",
     "spec/in_json_spec.rb",
     "spec/spec_helper.rb"
   ]

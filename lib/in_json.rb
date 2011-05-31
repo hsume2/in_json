@@ -65,7 +65,12 @@ module InJson
       definitions = read_inheritable_attribute(:in_json_definitions) || {}
       definition = definitions[name]
       return unless definition
-      definition.recursively_reject { |key, value| value.nil? }
+
+      reflexions = reflections
+
+      definition.recursively_reject({}) { |key, value|
+        !(reflexions && reflexions.respond_to?(:has_key?) && reflexions.has_key?(key)) && value.nil?
+      }
     end
   end
 

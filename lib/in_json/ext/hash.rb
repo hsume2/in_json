@@ -5,10 +5,10 @@ module InJson
     end
 
     module InstanceMethods
-      def recursively_reject(&blk)
+      def recursively_reject(default = nil, &blk)
         reject(&blk).inject({}) do |result, k_v|
           key, value = k_v
-          result[key] = value.is_a?(Hash) ? value.recursively_reject(&blk) : value
+          result[key] = value.is_a?(Hash) ? value.recursively_reject(&blk) : (value || default)
           result
         end
       end
